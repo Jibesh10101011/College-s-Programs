@@ -1,7 +1,9 @@
 #include <iostream>
+#include<bitset>
 #include <vector>
 #include <set>
 #include <map>
+#define bitsize 8
 using namespace std;
 
 struct Latancies
@@ -9,6 +11,27 @@ struct Latancies
     set<int> forbidden_latancies;
     set<int> permissible_latancies;
 };
+
+void print_latancies(Latancies &s) {
+    cout<<"Forbidden Latancies = {";
+    string temp="";
+    for(auto e:s.forbidden_latancies) {
+        temp.push_back(e);
+        temp.push_back(',');
+    }
+    temp.pop_back();
+    cout<<temp<<"}\n";
+
+    temp="";
+    cout<<"\nPermissible Latancies = {";
+    for(auto e:s.permissible_latancies) {
+        temp.push_back(e);
+        temp.push_back(',');
+    }
+    temp.pop_back();
+    cout<<temp<<"}\n";
+
+}
 
 set<int> latancies_from_sigle_row(vector<int> &v)
 {
@@ -74,37 +97,29 @@ vector<int> collision_vector(Latancies &s) {
 
 }
 
-int main()
-{
+string convert_vector_to_string(vector<int>&v) {
+    string temp="";
+    for(int e:v) temp.push_back(e+'0');
+    return temp;
+}
 
+void non_linear_pipeline() {
     vector<vector<int>> g = {
         {1, 0, 0, 0, 0, 1, 0, 1},
         {0, 1, 0, 1, 0, 0, 0, 0},
         {0, 0, 1, 0, 1, 0, 1, 0}
     };
 
-    Latancies u = get_latancies(g);
+    Latancies u = get_latancies(g); // Latancies 
+    vector<int>v=collision_vector(u); // Collison vector
+    bitset<bitsize> icv(convert_vector_to_string(v));
 
-    for (auto e : u.forbidden_latancies)
-    {
-        cout << e << " ";
-    }
-
-    cout << endl;
-
-    for (auto e : u.permissible_latancies)
-    {
-        cout << e << " ";
-    }
-
+    cout<<"Collision Vector = "<<icv;
     cout<<endl;
 
-    vector<int>v=collision_vector(u);
+}
 
-    cout<<"Collision Vector = ";
-    for(auto e:v) {
-        cout<<e<<" ";
-    }
-
-    return 0;
+int main()
+{
+    non_linear_pipeline();
 }
