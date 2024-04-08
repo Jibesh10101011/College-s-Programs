@@ -1,9 +1,9 @@
 #include <iostream>
-#include<bitset>
+#include <bitset>
 #include <vector>
 #include <set>
 #include <map>
-#include<stack>
+#include <stack>
 #define bitsize 8
 using namespace std;
 
@@ -13,25 +13,27 @@ struct Latancies
     set<int> permissible_latancies;
 };
 
-void print_latancies(Latancies &s) {
-    cout<<"Forbidden Latancies = {";
-    string temp="";
-    for(auto e:s.forbidden_latancies) {
+void print_latancies(Latancies &s)
+{
+    cout << "Forbidden Latancies = {";
+    string temp = "";
+    for (auto e : s.forbidden_latancies)
+    {
         temp.push_back(e);
         temp.push_back(',');
     }
     temp.pop_back();
-    cout<<temp<<"}\n";
+    cout << temp << "}\n";
 
-    temp="";
-    cout<<"\nPermissible Latancies = {";
-    for(auto e:s.permissible_latancies) {
+    temp = "";
+    cout << "\nPermissible Latancies = {";
+    for (auto e : s.permissible_latancies)
+    {
         temp.push_back(e);
         temp.push_back(',');
     }
     temp.pop_back();
-    cout<<temp<<"}\n";
-
+    cout << temp << "}\n";
 }
 
 set<int> latancies_from_sigle_row(vector<int> &v)
@@ -81,107 +83,151 @@ Latancies get_latancies(vector<vector<int>> &g)
     return s;
 }
 
-
-vector<int> collision_vector(Latancies &s) {
-    vector<int>v(s.forbidden_latancies.size()+s.permissible_latancies.size(),0);
+vector<int> collision_vector(Latancies &s)
+{
+    vector<int> v(s.forbidden_latancies.size() + s.permissible_latancies.size(), 0);
 
     /*
         Forbidden Latancy => 1
         Permissible Latancy => 0
     */
 
-   for(auto e:s.forbidden_latancies) {
-        v[e-1]=1;
-   }
+    for (auto e : s.forbidden_latancies)
+    {
+        v[e - 1] = 1;
+    }
 
-   return v;
-
+    return v;
 }
 
-string convert_vector_to_string(vector<int>&v) {
-    string temp="";
-    for(int e:v) temp.push_back(e+'0');
+string convert_vector_to_string(vector<int> &v)
+{
+    string temp = "";
+    for (int e : v)
+        temp.push_back(e + '0');
     return temp;
 }
 
-void non_linear_pipeline() {
+void non_linear_pipeline()
+{
     vector<vector<int>> g = {
         {1, 0, 0, 0, 0, 1, 0, 1},
         {0, 1, 0, 1, 0, 0, 0, 0},
-        {0, 0, 1, 0, 1, 0, 1, 0}
-    };
+        {0, 0, 1, 0, 1, 0, 1, 0}};
 
-    Latancies u = get_latancies(g); // Latancies 
-    vector<int>v=collision_vector(u); // Collison vector
+    Latancies u = get_latancies(g);      // Latancies
+    vector<int> v = collision_vector(u); // Collison vector
     bitset<bitsize> icv(convert_vector_to_string(v));
 
-    cout<<"Collision Vector = "<<icv;
-    cout<<endl;
-
+    cout << "Collision Vector = " << icv;
+    cout << endl;
 }
 
-vector<int> get_position_vector(string u) {
-    vector<int>s;
-    int diff=u.size()-1;
-    for(int i=diff;i>=0;i--) {
-        if(u[i]=='0') s.push_back(diff-i+1);
+vector<int> get_position_vector(string u)
+{
+    vector<int> s;
+    int diff = u.size() - 1;
+    for (int i = diff; i >= 0; i--)
+    {
+        if (u[i] == '0')
+            s.push_back(diff - i + 1);
     }
     return s;
-
 }
 
-string get_next_state(bitset<bitsize>&icv,bitset<bitsize>&curr,int pos) {
-    bitset<bitsize>temp(curr>>pos);
-    bitset<bitsize>next_state=temp|icv;
+string get_next_state(bitset<bitsize> &icv, bitset<bitsize> &curr, int pos)
+{
+    bitset<bitsize> temp(curr >> pos);
+    bitset<bitsize> next_state = temp | icv;
     return next_state.to_string();
 }
 
-void print_transition_diagram(map<pair<string,int>,string>&mp) {
-    cout<<"Transition Tree : \n";
-    for(auto e:mp) {
-        cout<<e.first.first<<" "<<e.first.second<<" "<<e.second<<'\n';
+void print_transition_diagram(map<pair<string, int>, string> &mp)
+{
+    cout << "Transition Tree : \n";
+    for (auto e : mp)
+    {
+        cout << e.first.first << " " << e.first.second << " " << e.second << '\n';
     }
-    cout<<endl;
+    cout << endl;
 }
 
-void transition_diagram(bitset<bitsize> &icv) {
-    map<pair<string,int>,string>mp;
+vector<vector<int>> cycles;
+map<string, set<vector<int>>> universal_map_cycles;
 
-    string initial_collison_vector=icv.to_string();
-    stack<string>stk; 
+void simple_cycles(
+    map<pair<string, int>, string> &mp,
+    map<string, set<int>> &adjacancy_map,
+    string curr_state,
+    map<string, bool> vis,
+    vector<int> cycle)
+{
+    if (vis[curr_state])
+    {
+        universal_map_cycles[curr_state].insert(cycle);
+        cycles.emplace_back(cycle);
+    }
+    else
+    {
+        for (int e : adjacancy_map[curr_state])
+        {
+            pair<string, int> pr = {curr_state, e};
+            string next_state = mp[pr];
+            vis[curr_state] = true;
+            if (next_state == curr_state)
+            {
+                vector<int> temp;
+                temp.push_back(e);
+                universal_map_cycles[curr_state].insert(temp);
+                cycles.emplace_back(temp);
+            }
+            else
+            {
+                cycle.emplace_back(e);
+                simple_cycles(mp, adjacancy_map, next_state, vis, cycle);
+                vis[curr_state] = false;
+                cycle.pop_back();
+            }
+        }
+    }
+}
+void transition_diagram(bitset<bitsize> &icv)
+{
+    map<pair<string, int>, string> mp;
+    string initial_collison_vector = icv.to_string();
+    stack<string> stk;
     stk.push(initial_collison_vector);
-    
-    map<string,bool>vis;
-    while(!stk.empty()) {
-        string curr_vector=stk.top();
-        if(!vis[curr_vector]) {
-            vis[curr_vector]=true;
-            vector<int>position_vector=get_position_vector(curr_vector);
-            bitset<bitsize>curr(curr_vector);
-            for(int e:position_vector) {
-                string next_state=get_next_state(icv,curr,e);
-                pair<string,int> pr={curr_vector,e};
-                mp[pr]=next_state;
+    map<string, bool> vis;
+    while (!stk.empty())
+    {
+        string curr_vector = stk.top();
+        if (!vis[curr_vector])
+        {
+            vis[curr_vector] = true;
+            vector<int> position_vector = get_position_vector(curr_vector);
+            bitset<bitsize> curr(curr_vector);
+            for (int e : position_vector)
+            {
+                string next_state = get_next_state(icv, curr, e);
+                pair<string, int> pr = {curr_vector, e};
+                mp[pr] = next_state;
                 stk.push(next_state);
             }
         }
         stk.pop();
     }
+    map<string, set<int>> adjacancy_map;
+    for (auto e : mp)
+    {
+        adjacancy_map[e.first.first].insert(e.first.second);
+    }
 
-
-    print_transition_diagram(mp);
-
+    map<string, bool> vis_temp;
+    vector<int> cycle;
+    simple_cycles(mp, adjacancy_map, initial_collison_vector, vis_temp, cycle);
 }
-
-
-
 int main()
 {
-   bitset<bitsize> icv("01011010");
-   transition_diagram(icv);
-    // vector<int>v=get_position_vector("01111111");
-    // for(auto e:v) {
-    //     cout<<e<<" ";
-    // }
-   return 0;
+
+    return 0;
 }
