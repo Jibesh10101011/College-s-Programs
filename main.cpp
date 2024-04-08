@@ -3,6 +3,7 @@
 #include <vector>
 #include <set>
 #include <map>
+#include<stack>
 #define bitsize 8
 using namespace std;
 
@@ -119,7 +120,68 @@ void non_linear_pipeline() {
 
 }
 
+vector<int> get_position_vector(string u) {
+    vector<int>s;
+    int diff=u.size()-1;
+    for(int i=diff;i>=0;i--) {
+        if(u[i]=='0') s.push_back(diff-i+1);
+    }
+    return s;
+
+}
+
+string get_next_state(bitset<bitsize>&icv,bitset<bitsize>&curr,int pos) {
+    bitset<bitsize>temp(curr>>pos);
+    bitset<bitsize>next_state=temp|icv;
+    return next_state.to_string();
+}
+
+void print_transition_diagram(map<pair<string,int>,string>&mp) {
+    cout<<"Transition Tree : \n";
+    for(auto e:mp) {
+        cout<<e.first.first<<" "<<e.first.second<<" "<<e.second<<'\n';
+    }
+    cout<<endl;
+}
+
+void transition_diagram(bitset<bitsize> &icv) {
+    map<pair<string,int>,string>mp;
+
+    string initial_collison_vector=icv.to_string();
+    stack<string>stk; 
+    stk.push(initial_collison_vector);
+    
+    map<string,bool>vis;
+    while(!stk.empty()) {
+        string curr_vector=stk.top();
+        if(!vis[curr_vector]) {
+            vis[curr_vector]=true;
+            vector<int>position_vector=get_position_vector(curr_vector);
+            bitset<bitsize>curr(curr_vector);
+            for(int e:position_vector) {
+                string next_state=get_next_state(icv,curr,e);
+                pair<string,int> pr={curr_vector,e};
+                mp[pr]=next_state;
+                stk.push(next_state);
+            }
+        }
+        stk.pop();
+    }
+
+
+    print_transition_diagram(mp);
+
+}
+
+
+
 int main()
 {
-    non_linear_pipeline();
+   bitset<bitsize> icv("01011010");
+   transition_diagram(icv);
+    // vector<int>v=get_position_vector("01111111");
+    // for(auto e:v) {
+    //     cout<<e<<" ";
+    // }
+   return 0;
 }
