@@ -6,12 +6,28 @@
 #include <stack>
 #define bitsize 8
 using namespace std;
-
 struct Latancies
 {
     set<int> forbidden_latancies;
     set<int> permissible_latancies;
 };
+void print_simple_cycles();
+void transition_diagram(bitset<bitsize>&);
+void simple_cycles(
+    map<pair<string, int>, string>&,
+    map<string, set<int>>&,
+    string,
+    map<string, bool>,
+    vector<int>);
+void print_transition_diagram(map<pair<string,int>, string>&);
+string get_next_state(bitset<bitsize> &, bitset<bitsize> &, int);
+vector<int> get_position_vector(string);
+void non_linear_pipeline();
+string convert_vector_to_string(vector<int> &);
+vector<int> collision_vector(Latancies &);
+Latancies get_latancies(vector<vector<int>>&);
+void print_latancies(Latancies &);
+void greedy_cycles_print(set<vector<int>>&);
 
 void print_latancies(Latancies &s)
 {
@@ -19,17 +35,18 @@ void print_latancies(Latancies &s)
     string temp = "";
     for (auto e : s.forbidden_latancies)
     {
-        temp.push_back(e);
+        temp.push_back(e+'0');
         temp.push_back(',');
     }
+    if(!temp.empty())
     temp.pop_back();
     cout << temp << "}\n";
 
     temp = "";
-    cout << "\nPermissible Latancies = {";
+    cout << "Permissible Latancies = {";
     for (auto e : s.permissible_latancies)
     {
-        temp.push_back(e);
+        temp.push_back(e+'0');
         temp.push_back(',');
     }
     temp.pop_back();
@@ -108,20 +125,6 @@ string convert_vector_to_string(vector<int> &v)
     return temp;
 }
 
-void non_linear_pipeline()
-{
-    vector<vector<int>> g = {
-        {1, 0, 0, 0, 0, 1, 0, 1},
-        {0, 1, 0, 1, 0, 0, 0, 0},
-        {0, 0, 1, 0, 1, 0, 1, 0}};
-
-    Latancies u = get_latancies(g);      // Latancies
-    vector<int> v = collision_vector(u); // Collison vector
-    bitset<bitsize> icv(convert_vector_to_string(v));
-
-    cout << "Collision Vector = " << icv;
-    cout << endl;
-}
 
 vector<int> get_position_vector(string u)
 {
@@ -147,13 +150,93 @@ void print_transition_diagram(map<pair<string, int>, string> &mp)
     cout << "Transition Tree : \n";
     for (auto e : mp)
     {
-        cout << e.first.first << " " << e.first.second << " " << e.second << '\n';
+        cout << e.first.first << "---(" << e.first.second <<")---->"<< e.second << '\n';
     }
     cout << endl;
 }
 
 vector<vector<int>> cycles;
 map<string, set<vector<int>>> universal_map_cycles;
+
+void greedy_cycles_print(set<vector<int>>&s) {
+    string fnl="[";
+    for(vector<int>v:s) {
+        string s="{";
+        for(int e:v) {
+            s.push_back(e+'0');
+            s.push_back(',');
+        }
+        if(!s.empty()) s.pop_back();
+        s.push_back('}');
+        fnl+=s;
+        fnl.push_back(',');
+    }
+
+    if(!fnl.empty()) fnl.pop_back();
+    fnl.push_back(']');
+    cout<<fnl<<endl;
+
+}
+
+
+vector<int> get_greddy_cycle(string s,int mn) {
+    set<vector<int>>v=universal_map_cycles[s];
+    vector<int>f;
+    for(vector<int>u:v) {
+        for(int e:u) {
+            if(e==mn) return u;
+        }
+    }
+    return f;
+}
+
+void greedy_cycles(map<string, set<int>> &adjacancy_map) {
+    set<vector<int>>s;
+    for(auto e:adjacancy_map) {
+        int mn=*e.second.begin();
+        vector<int>temp=get_greddy_cycle(e.first,mn);
+        if(!temp.empty()) s.insert(temp);
+    }
+
+    greedy_cycles_print(s);
+
+    double mn=INT8_MAX;
+    for(vector<int>u:s) {
+        double sum=0.000;
+        for(int e:u) sum+=e;
+        sum=sum/u.size();
+
+        mn=mn<sum?mn:sum;
+    }
+
+    cout<<"Minimal Average Latancy = "<<mn<<endl;
+    
+}
+
+void print_simple_cycles() {
+    set<vector<int>>s;
+    for(vector<int>v:cycles) {
+      s.insert(v);
+    }
+
+    string fnl="[";
+    for(vector<int>v:s) {
+        string s="{";
+        for(int e:v) {
+            s.push_back(e+'0');
+            s.push_back(',');
+        }
+        if(!s.empty()) s.pop_back();
+        s.push_back('}');
+        fnl+=s;
+        fnl.push_back(',');
+    }
+
+    if(!fnl.empty()) fnl.pop_back();
+    fnl.push_back(']');
+    cout<<fnl<<endl;
+
+}
 
 void simple_cycles(
     map<pair<string, int>, string> &mp,
@@ -216,6 +299,7 @@ void transition_diagram(bitset<bitsize> &icv)
         }
         stk.pop();
     }
+    print_transition_diagram(mp);
     map<string, set<int>> adjacancy_map;
     for (auto e : mp)
     {
@@ -225,9 +309,34 @@ void transition_diagram(bitset<bitsize> &icv)
     map<string, bool> vis_temp;
     vector<int> cycle;
     simple_cycles(mp, adjacancy_map, initial_collison_vector, vis_temp, cycle);
+    cout<<"Simple Cycles = ";
+    print_simple_cycles();
+    cout<<"\n";
+    cout<<"Greedy Cycles = ";
+    greedy_cycles(adjacancy_map);
+    cout<<"\n";
 }
+void non_linear_pipeline()
+{
+    vector<vector<int>> g = {
+        {1, 0, 0, 0, 0, 1, 0, 1},
+        {0, 1, 0, 1, 0, 0, 0, 0},
+        {0, 0, 1, 0, 1, 0, 1, 0}};
+
+    Latancies u = get_latancies(g);      // Latancies
+    vector<int> v = collision_vector(u); // Collison vector
+    bitset<bitsize> icv(convert_vector_to_string(v));
+    print_latancies(u);
+    cout << "\nInitial Collision Vector = " << icv;
+    cout <<"\n\n";
+    transition_diagram(icv);
+    cout<<'\n';
+
+}
+
+
 int main()
 {
-
+    non_linear_pipeline();
     return 0;
 }
